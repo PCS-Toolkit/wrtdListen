@@ -1,0 +1,28 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.20 FATAL_ERROR)
+
+PROJECT(wrtdListen)
+
+FILE(GLOB _SOURCE_LIST *.c *.h)
+#ADD_EXECUTABLE(
+#    ${PROJECT_NAME}
+#    ${_SOURCE_LIST}
+#)
+
+ADD_EXECUTABLE(wrtdWait
+               wrtdMain.c)
+
+ADD_LIBRARY(
+    ${PROJECT_NAME} SHARED
+    wrtdListen.c
+)
+
+TARGET_INCLUDE_DIRECTORIES(
+    ${PROJECT_NAME}
+    PRIVATE
+        ../ACQ420FMC
+)
+TARGET_LINK_LIBRARIES(wrtdWait
+    PRIVATE
+      ${PROJECT_NAME}
+      popt
+)
