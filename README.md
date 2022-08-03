@@ -16,23 +16,30 @@ status = wrtdListen(const char *group, unsigned int port, const char *event_rege
 - unsigned int port - network port to listen on
 - unsigned int clock_id {CLOCK_TAI | CLOCK_REALTIME | CLOCK_MONOTONIC | clockid made from fd of ptp device} 
 - int leapseconds - number of leap seconds to subract (or is it add) 
+
+#wrtdWait
 ```
-Usage: wrtdWait [-Pv?] [-p|--port=5044 or ...] [-g|--group=STRING] [-e|--event_id=STRING] [-d|--delay=0] [-P|--PtP] [-v|--verbose] [-?|--help] [--usage]
+Usage: wrtdWait [-vtrm?] [-p|--port=5044] [-g|--group=224.0.23.159] [-e|--event_id=STRING]
+        [-d|--delay=0] [-P|--PtP=/dev/ptp0] [-v|--verbose] [-t|--tai] [-r|--realtime]
+        [-m|--monotonic] [-l|--leapseconds=37] [-?|--help] [--usage]
 ```
 
 ```
-./wrtdWait --help
 Usage: wrtdWait [OPTION...]
-  -p, --port=5044 or ...     follow with multicast port
-  -g, --group=STRING         follow with multicast group address
-  -e, --event_id=STRING      follow with regex to match event string
-  -d, --delay=0              follow signed number of nanoseconds to wait
-  -P, --PtP                  Use PTP for time calls
-  -v, --verbose              be verbose
+  -p, --port=5044              follow with multicast port
+  -g, --group=224.0.23.159     follow with multicast group address
+  -e, --event_id=STRING        follow with regex to match event string
+  -d, --delay=0                follow signed number of nanoseconds to wait
+  -P, --PtP=/dev/ptp0          follow with device to use PTP for time calls
+  -v, --verbose                be verbose
+  -t, --tai                    Use CLOCK_TAI
+  -r, --realtime               Use CLOCK_REALTIME
+  -m, --monotonic              Use CLOCK_MONOTONIC
+  -l, --leapseconds=37         follow signed number of leapseconds to subtract
 
 Help options:
-  -?, --help                 Show this help message
-      --usage                Display brief usage message
+  -?, --help                   Show this help message
+      --usage                  Display brief usage message
 ```
 
 
