@@ -17,7 +17,6 @@ status = wrtdListen(const char *group, unsigned int port, const char *event_rege
 - unsigned int clock_id {CLOCK_TAI | CLOCK_REALTIME | CLOCK_MONOTONIC | clockid made from fd of ptp device} 
 - int leapseconds - number of leap seconds to subract (or is it add) 
 ```
-```
 Usage: wrtdWait [-Pv?] [-p|--port=5044 or ...] [-g|--group=STRING] [-e|--event_id=STRING] [-d|--delay=0] [-P|--PtP] [-v|--verbose] [-?|--help] [--usage]
 ```
 
