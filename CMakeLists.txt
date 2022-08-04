@@ -34,6 +34,9 @@ ExternalProject_Add(wrtd
     COMMAND         install -m 0755 <SOURCE_DIR>/software/include/wrtd-common.h <INSTALL_DIR>/include
 )
 ExternalProject_Get_Property(wrtd INSTALL_DIR)
+set(wrtd_INSTALL_DIR "${INSTALL_DIR}")
+set(wrtd_INCLUDE "${INSTALL_DIR}/include")
+
 
 find_package(POPT)
 
@@ -50,7 +53,7 @@ add_dependencies(${PROJECT_NAME} wrtd)
 TARGET_INCLUDE_DIRECTORIES(
     ${PROJECT_NAME}
     PRIVATE
-        ${INSTALL_DIR}/include
+        ${wrtd_INCLUDE}
 )
 
 TARGET_LINK_LIBRARIES(wrtdWait
