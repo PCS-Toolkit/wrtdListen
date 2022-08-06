@@ -94,6 +94,6 @@ int main (int argc, const char *argv[])
   else 
     clkid = CLOCK_REALTIME;
 
-  while (wrtdListen(group, port, event_id, clkid, leapseconds, verbose) == 0);
+  while (wrtdListen(group, port, event_id, clkid, (double)0.0, leapseconds, verbose) == 0);
   return 0;
 }
