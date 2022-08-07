@@ -57,6 +57,10 @@ extern int wrtdListen(const char *group, unsigned int port, const char *event_re
                       (clock_id != CLOCK_REALTIME) &&
                       (clock_id != CLOCK_MONOTONIC));
 
+  if (verbose)
+  {
+	  printf("wrtdListen(%s, %u, %s, %d, %f, %d)\n", group, port, event_regex, clock_id, delay, leapseconds);
+  }
   // Compile the regular expression
   if (regcomp( &reegex, event_regex, 0)) {
     perror("Could not parse regex");
