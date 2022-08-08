@@ -16,6 +16,50 @@
 #include "wrtdListen.h"
 #include "wrtd-common.h"
 
+extern int wrtdShowClock(const char *clock_name)
+{
+    unsigned int clkid;
+    struct timespec cur_time;
+    if (strcmp (clock_name, "CLOCK_TAI") == 0)
+        clkid = CLOCK_TAI;
+    else if (strcmp (clock_name, "CLOCK_REALTIME") == 0)
+       clkid = CLOCK_REALTIME;
+    else if (strcmp (clock_name, "CLOCK_MONOTONIC") == 0)
+        clkid = CLOCK_MONOTONIC;
+    else if (strlen(clock_name) == 0)
+	clkid = 0;
+    else
+    {
+        const unsigned char *ptp_front = "/dev/ptp";
+        if (strncmp(clock_name, ptp_front, strlen(ptp_front)) == 0)
+	{
+    	    int fd = open(clock_name, O_RDWR);
+            if (fd < 0)
+	    {
+	        perror("could not open PtP clock");
+	        return fd;
+	    }
+	    clkid = get_clockid(fd); 	
+    	}
+	else
+	{
+	    printf("Unrecognized clock '%s' must be one of ('', 'CLOCK_REALTIME', 'CLOCK_TAI', 'CLOCK_MONOTONIC', '/dev/ptpN')\n", clock_name);
+	    return -1;
+	}
+    }
+    if (clock_gettime(clkid, &cur_time) == 0)
+    {
+        printf("Time from %s (%u) is %lu sec %lu nsec\n", clock_name, clkid, cur_time.tv_sec, cur_time.tv_nsec);
+    }
+    else
+    {
+	printf("error in clock_gettime");
+	return errno;
+    }
+    return 0;
+
+}
+
 extern int wrtdListenDTacq(const char *event_regx, double delay, unsigned int verbose)
 {
 /*

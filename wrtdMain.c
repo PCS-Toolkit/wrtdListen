@@ -38,7 +38,7 @@ static struct poptOption optionsTable[] = {
    (const char *) "follow with regex to match event string", NULL},
   {(const char *) "delay", (char) 'd', POPT_ARG_FLOAT, (void *) &delay, 0.0,
    (const char *) "follow signed number of nanoseconds to wait", (const char *) "0.0"},
-  {(const char *) "PtP", (char) 'P', POPT_ARG_STRING, &ptp, 0,
+  {(const char *) "ptp", (char) 'P', POPT_ARG_STRING, &ptp, 0,
    (const char *) "follow with device to use PTP for time calls", (const char *)"/dev/ptp0"},
   {(const char *) "verbose", (char) 'v', POPT_ARG_NONE, &verbose, 0,
    (const char *) "be verbose", NULL},
