@@ -19,7 +19,7 @@
 /* Data values for the options. */
 static int port = 5044;
 static int leapseconds = 37;
-static int delay = 0;
+static float delay = 0;
 static char *ptp = NULL;
 static int verbose = 0;
 static int realtime = 0;
@@ -36,8 +36,8 @@ static struct poptOption optionsTable[] = {
    (const char *) "follow with multicast group address", (const char *)"224.0.23.159"},
   {(const char *) "event_id", (char) 'e', POPT_ARG_STRING, (void *) &event_id, 0,
    (const char *) "follow with regex to match event string", NULL},
-  {(const char *) "delay", (char) 'd', POPT_ARG_INT, (void *) &delay, 0,
-   (const char *) "follow signed number of nanoseconds to wait", (const char *) "0"},
+  {(const char *) "delay", (char) 'd', POPT_ARG_FLOAT, (void *) &delay, 0.0,
+   (const char *) "follow signed number of nanoseconds to wait", (const char *) "0.0"},
   {(const char *) "PtP", (char) 'P', POPT_ARG_STRING, &ptp, 0,
    (const char *) "follow with device to use PTP for time calls", (const char *)"/dev/ptp0"},
   {(const char *) "verbose", (char) 'v', POPT_ARG_NONE, &verbose, 0,
@@ -62,14 +62,15 @@ int main (int argc, const char *argv[])
 					(const struct poptOption *)
 					&optionsTable,
 					0);
-  int option = poptGetNextOpt (context);
+  int option;
+  while(poptGetNextOpt(context) != -1);
   if(verbose){
     printf ("After processing, options have values:\n");
     printf ("\t port holds %d\n", port);
     printf ("\t ptp flag holds %s\n", ptp);
     printf ("\t group holds [%s]\n", group);
     printf ("\t event regx holds [%s]\n", event_id);
-    printf ("\t delay holds %d\n", delay);
+    printf ("\t delay holds %f\n", delay);
   }
   poptFreeContext (context);
   
@@ -94,6 +95,6 @@ int main (int argc, const char *argv[])
   else 
     clkid = CLOCK_REALTIME;
 
-  while (wrtdListen(group, port, event_id, clkid, (double)0.0, leapseconds, verbose) == 0);
+  while (wrtdListen(group, port, event_id, clkid, (double)delay, leapseconds, verbose) == 0);
   return 0;
 }
