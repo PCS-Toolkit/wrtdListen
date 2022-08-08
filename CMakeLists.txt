@@ -48,6 +48,7 @@ TARGET_LINK_LIBRARIES(wrtdWait
     PRIVATE
     ${PROJECT_NAME}
     popt
+    m
 )
 
 install(TARGETS wrtdWait)

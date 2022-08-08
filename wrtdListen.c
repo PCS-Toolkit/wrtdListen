@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <fcntl.h>
+#include <math.h>
 #include <netinet/in.h>
 #include <regex.h>
 #include <stdio.h>
@@ -15,7 +16,7 @@
 #include "wrtdListen.h"
 #include "wrtd-common.h"
 
-extern int wrtdListenDTacq(const char *event_regx, unsigned int verbose)
+extern int wrtdListenDTacq(const char *event_regx, double delay, unsigned int verbose)
 {
 /*
  * int wrtdListenDTacq(const char *event_regular_expression, unsigned int verbose)
@@ -43,19 +44,23 @@ extern int wrtdListenDTacq(const char *event_regx, unsigned int verbose)
   }
   clock_id = get_clockid(fd);
  
-  status = wrtdListen("224.0.23.159", 5044, event_regx, clock_id, 37, verbose);
+  status = wrtdListen("224.0.23.159", 5044, event_regx, delay, clock_id, 37, verbose);
   if (fd > 0)
     close(fd);
   return status;
 }
 
-extern int wrtdListen(const char *group, unsigned int port, const char *event_regex, unsigned int clock_id, int leapseconds, unsigned int verbose)
+extern int wrtdListen(const char *group, unsigned int port, const char *event_regex, unsigned int clock_id, double delay, int leapseconds, unsigned int verbose)
 {
   regex_t reegex;
   unsigned int ptp = ((clock_id != CLOCK_TAI) &&
                       (clock_id != CLOCK_REALTIME) &&
                       (clock_id != CLOCK_MONOTONIC));
 
+  if (verbose)
+  {
+	  printf("wrtdListen(%s, %u, %s, %d, %f, %d)\n", group, port, event_regex, clock_id, delay, leapseconds);
+  }
   // Compile the regular expression
   if (regcomp( &reegex, event_regex, 0)) {
     perror("Could not parse regex");
@@ -136,8 +141,9 @@ extern int wrtdListen(const char *group, unsigned int port, const char *event_re
       printf("hw_detect -%3.3s-\nevent_id -%s-\nseq %d\nts_sec %d\nts_ns %d\nts_frac %d\nts_hi_sec %d\n",
               msgbuf.hw_detect,msgbuf.event_id, msgbuf.seq, msgbuf.ts_sec, msgbuf.ts_ns, msgbuf.ts_frac, msgbuf.ts_hi_sec);
     struct timespec desired_tp, cur_tp;
-    desired_tp.tv_sec=msgbuf.ts_sec - leapseconds;
-    desired_tp.tv_nsec = msgbuf.ts_ns;
+    double delay_secs = floor(delay);
+    desired_tp.tv_sec=msgbuf.ts_sec - leapseconds + (int)delay_secs;
+    desired_tp.tv_nsec = msgbuf.ts_ns + (delay - delay_secs)*1E9;
     if (clock_gettime(clock_id, &cur_tp) == 0)
     {
       struct timespec remaining_tp={0,0};
