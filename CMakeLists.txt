@@ -28,6 +28,10 @@ find_package(POPT)
 ADD_EXECUTABLE(wrtdWait
                wrtdMain.c)
 
+ADD_EXECUTABLE(clock_times
+               clock_times.c)
+
+
 ADD_LIBRARY(
     ${PROJECT_NAME} SHARED
     wrtdListen.c
@@ -48,5 +52,6 @@ TARGET_LINK_LIBRARIES(wrtdWait
 
 install(TARGETS wrtdWait)
 install(TARGETS wrtdListen)
+install(TARGETS clock_times)
 
 install(FILES "${wrtd_INCLUDE}/wrtd-common.h" TYPE INCLUDE)
