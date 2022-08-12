@@ -16,6 +16,77 @@
 #include "wrtdListen.h"
 #include "wrtd-common.h"
 
+static unsigned int get_DTacq_clock_id()
+{
+  unsigned int clock_id;
+  unsigned const char *ptp = "/dev/ptp0";
+  int fd = open(ptp, O_RDWR);
+  if (fd < 0) {
+    fprintf(stderr, "opening %s: %s reverting to CLOCK_TAI\n", ptp, strerror(errno));
+    clock_id = CLOCK_TAI;
+  }
+  else
+    clock_id = get_clockid(fd);
+}
+
+static int wrtd_wait_until(unsigned int clock_id, double until, unsigned int verbose)
+{
+    int status;
+    struct timespec desired_tp, cur_tp;
+    desired_tp.tv_sec = floor(until);
+    desired_tp.tv_nsec = (until - desired_tp.tv_sec) * 1E9;
+    if ((status = clock_gettime(clock_id, &cur_tp)) == 0)
+    {
+      struct timespec remaining_tp={0,0};
+      if (verbose)
+      {
+        printf("CURRENT: tv_sec=%ld tv_nsec=%ld\n", cur_tp.tv_sec, cur_tp.tv_nsec);
+        printf("DESIRED: tv_sec=%ld tv_nsec=%ld\n", desired_tp.tv_sec, desired_tp.tv_nsec);
+        printf("sleeping\n");
+      }
+      if (
+          (clock_id == CLOCK_TAI) ||
+          (clock_id == CLOCK_REALTIME) ||
+          (clock_id == CLOCK_MONOTONIC)
+         )
+      {
+        while (status = clock_nanosleep(clock_id, TIMER_ABSTIME, &desired_tp, &remaining_tp))
+          if (status != EINTR)
+	  {
+            perror("nanosleep - unexpected return value");
+	    return status;
+	  }
+        if (verbose)
+        {
+          printf("tv_sec=%ld tv_nsec=%ld\n", desired_tp.tv_sec, desired_tp.tv_nsec);
+          printf("\tawake status = %d\n", status);
+        }
+      }
+      else
+      {
+        if (verbose)
+          printf("PTP Sleeping\n");
+        while((cur_tp.tv_sec < desired_tp.tv_sec) || (cur_tp.tv_nsec < desired_tp.tv_nsec))
+        {    
+          if (status = clock_gettime(clock_id, &cur_tp))
+          {      
+            perror("Failed to get PTP time\n");
+            return status;
+          }      
+        }
+	if (verbose)
+	{
+	  printf("PtP Awake tv_sec = %ld, tv_nsec = %ld\n", cur_tp.tv_sec, cur_tp.tv_nsec);
+	}
+      }
+    }
+    else
+    {
+      perror("could not clock_gettime");
+    }
+    return status;
+}
+
 extern int wrtdShowClock(const char *clock_name)
 {
     unsigned int clkid;
@@ -76,7 +147,7 @@ extern int wrtdListenDTacq(const char *event_regx, double delay, unsigned int ve
  *     group=224.0.23.159     follow with multicast group address
  *     delay=0                follow signed number of nanoseconds to wait
  *     PtP=/dev/ptp0          follow with device to use PTP for time calls
- *     leapseconds=37         follow signed number of leapseconds to subtract
+ *     leapseconds=0         follow signed number of leapseconds to subtract
  */
   int status;
   unsigned int clock_id;
@@ -86,14 +157,158 @@ extern int wrtdListenDTacq(const char *event_regx, double delay, unsigned int ve
     fprintf(stderr, "opening %s: %s reverting to CLOCK_TAI\n", ptp, strerror(errno));
     clock_id = CLOCK_TAI;
   }
-  clock_id = get_clockid(fd);
- 
-  status = wrtdListen("224.0.23.159", 5044, event_regx, delay, clock_id, 37, verbose);
+  else 
+    clock_id = get_clockid(fd);
+
+  if (verbose)
+    printf("wrtdListenTacq(%s, %f, 1)\n", event_regx, delay); 
+
+  status = wrtdListen("224.0.23.159", 5044, event_regx, clock_id, delay, 0, verbose);
   if (fd > 0)
     close(fd);
   return status;
 }
 
+
+extern double wrtdGetDTacqTime(const char *event_regx, double delay, unsigned int verbose)
+{
+    unsigned int clock_id = get_DTacq_clock_id();
+    double answer = wrtdGetTime("224.0.23.159", 5044, event_regx, clock_id, delay, 0, verbose);
+    return answer;
+}
+
+extern int wrtdWaitDTacq(const char *event_regx, double delay, unsigned int verbose)
+{
+/*
+ * int wrtdListenDTacq(const char *event_regular_expression, unsigned int verbose)
+ *
+ * args:
+ *    event_regular_expression - regex to match event_id against
+ * returns:
+ *    0 - success
+ *    1 - failure
+ * description:
+ *   call wrtdListen with defaults that make sense for D-Tacq wrtd messages
+ *     port=5044              follow with multicast port
+ *     group=224.0.23.159     follow with multicast group address
+ *     delay=0                follow signed number of nanoseconds to wait
+ *     PtP=/dev/ptp0          follow with device to use PTP for time calls
+ *     leapseconds=0         follow signed number of leapseconds to subtract
+ */
+    unsigned int clock_id = get_DTacq_clock_id();
+    double answer = wrtdGetTime("224.0.23.159", 5044, event_regx, clock_id, delay, 0, verbose);
+    int status = wrtd_wait_until(clock_id, answer, verbose);
+    return status;
+}
+
+extern int wrtdWait(const char *group, unsigned int port, const char *event_regex, unsigned int clock_id, double delay, int leapseconds, unsigned int verbose)
+{
+    double answer = wrtdGetTime(group, port, event_regex, clock_id, delay, leapseconds, verbose);
+    int status = wrtd_wait_until(clock_id, answer, verbose);
+    return status;
+}
+extern double wrtdGetTime(const char *group, unsigned int port, const char *event_regex, unsigned int clock_id, double delay, int leapseconds, unsigned int verbose)
+{
+  double answer = -1.;
+  regex_t reegex;
+  unsigned int ptp = ((clock_id != CLOCK_TAI) &&
+                      (clock_id != CLOCK_REALTIME) &&
+                      (clock_id != CLOCK_MONOTONIC));
+
+  if (verbose)
+  {
+	  printf("wrtdGetTime(%s, %u, %s, %d, %f, %d)\n", group, port, event_regex, clock_id, delay, leapseconds);
+  }
+  // Compile the regular expression
+  if (regcomp( &reegex, event_regex, 0)) {
+    perror("Could not parse regex");
+    return answer;
+  }
+
+  // create what looks like an ordinary UDP socket
+  //
+  int fd = socket(AF_INET, SOCK_DGRAM, 0);
+  if (fd < 0) {
+    perror("socket");
+    return answer;
+  }
+
+  // allow multiple sockets to use the same PORT number
+  //
+  u_int yes = 1;
+  if (setsockopt( fd, SOL_SOCKET, SO_REUSEADDR, (char*) &yes, sizeof(yes)) < 0)
+  {
+   perror("Reusing ADDR failed");
+   return answer;
+  }
+
+  // set up destination address
+  //
+  struct sockaddr_in addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = htonl(INADDR_ANY); // differs from sender
+  addr.sin_port = htons(port);
+
+  // bind to receive address
+  //
+  if (bind(fd, (struct sockaddr*) &addr, sizeof(addr)) < 0) {
+    perror("bind");
+    return answer;
+  }
+
+  // use setsockopt() to request that the kernel join a multicast group
+  //
+  struct ip_mreq mreq;
+  mreq.imr_multiaddr.s_addr = inet_addr(group);
+  mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+  if ( setsockopt( fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &mreq, sizeof(mreq) ) < 0 )
+  {
+    perror("setsockopt");
+    return answer;
+  }
+  int status = 1;
+  while (1)
+  {
+    struct wrtd_message msgbuf;
+    socklen_t addrlen = sizeof(addr);
+    int nbytes = recvfrom( fd, (char *)&msgbuf, sizeof(msgbuf), 0, (struct sockaddr *) &addr, &addrlen );
+    if (nbytes < 0) {
+      perror("recvfrom");
+      break;
+    }
+    if (nbytes != sizeof(msgbuf))
+    {
+      if (verbose)
+        printf("recfrom expected %d bytes got %d\n", (int)sizeof(msgbuf), nbytes);
+      continue;
+    }
+    if (strncmp(msgbuf.hw_detect, "LXI", 3))
+    {
+      if (verbose)
+        printf("Expected LXI message got -%3.3s-\n", msgbuf.hw_detect);
+      continue;
+    }
+    if (regexec( &reegex, msgbuf.event_id, 0, NULL, 0))
+    {
+      if (verbose)
+        printf("LXI message -%s- is not for us -%s-\n", msgbuf.event_id, event_regex);
+      continue;
+    }
+    if (verbose)
+      printf("hw_detect -%3.3s-\nevent_id -%s-\nseq %d\nts_sec %d\nts_ns %d\nts_frac %d\nts_hi_sec %d\n",
+              msgbuf.hw_detect,msgbuf.event_id, msgbuf.seq, msgbuf.ts_sec, msgbuf.ts_ns, msgbuf.ts_frac, msgbuf.ts_hi_sec);
+    double delay_secs = floor(delay);
+    answer = msgbuf.ts_sec - leapseconds + (int)delay_secs + msgbuf.ts_ns*1E-9 + (delay - delay_secs)*1E9;
+    break;
+  }
+  if (verbose)
+  {
+    printf("wrtdGetTime returning %f\n", answer);
+  }
+  return answer;
+} 
+    /***********/
 extern int wrtdListen(const char *group, unsigned int port, const char *event_regex, unsigned int clock_id, double delay, int leapseconds, unsigned int verbose)
 {
   regex_t reegex;

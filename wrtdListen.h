@@ -1,6 +1,11 @@
-extern int wrtdListen(const char *group, unsigned int port, const char *event_regex, unsigned int clock_id, double delay, int leapseconds, unsigned int verbose);
+extern int wrtdShowClock(const char *clock_name);
 extern int wrtdListenDTacq(const char *event_regx, double delay, unsigned int verbose);
-extern int wrtdShowTime(const char *clock_name);
+extern double wrtdGetDTacqTime(const char *event_regx, double delay, unsigned int verbose);
+extern int wrtdWaitDTacq(const char *event_regx, double delay, unsigned int verbose);
+extern int wrtdWait(const char *group, unsigned int port, const char *event_regex, unsigned int clock_id, double delay, int leapseconds, unsigned int verbose);
+extern double wrtdGetTime(const char *group, unsigned int port, const char *event_regex, unsigned int clock_id, double delay, int leapseconds, unsigned int verbose);
+extern int wrtdListen(const char *group, unsigned int port, const char *event_regex, unsigned int clock_id, double delay, int leapseconds, unsigned int verbose);
+
 #define CLOCKFD 3
 static clockid_t get_clockid(int fd)
 {
