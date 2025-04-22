@@ -1,3 +1,5 @@
+#ifndef __WRTDLISTEN__
+#define __WRTDLISTEN__
 extern int wrtdShowClock(const char *clock_name);
 extern int wrtdListenDTacq(const char *event_regx, double delay, unsigned int verbose);
 extern double wrtdGetDTacqTime(const char *event_regx, double delay, unsigned int verbose);
@@ -11,3 +13,4 @@ static clockid_t get_clockid(int fd)
 {
   return (((unsigned int) ~fd) << 3) | CLOCKFD;
 }
+#endif
