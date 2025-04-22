@@ -16,7 +16,7 @@ include(FetchContent)
 cmake_policy(SET CMP0097 NEW) # only in 3.16 (which is default for ubuntu 20.04)
 FetchContent_Declare(
     wrtd_common
-    GIT_REPOSITORY https://ohwr.org/project/wrtd.git
+    GIT_REPOSITORY https://gitlab.com/ohwr/project/wrtd.git
     GIT_TAG v${libwrtd_VERSION}
     GIT_SUBMODULES "doc" # Non-git-submodule dir that already exists work around for bug in cmake < 3.20?
 )
