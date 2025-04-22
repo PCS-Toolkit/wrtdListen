@@ -36,11 +36,10 @@ ADD_LIBRARY(
     ${PROJECT_NAME} SHARED
     wrtdListen.c
 )
-set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER wrtdListen.h)
 
 TARGET_INCLUDE_DIRECTORIES(
     ${PROJECT_NAME}
-    PRIVATE
+    PUBLIC
         ${wrtd_INCLUDE}
 )
 
